@@ -1,0 +1,35 @@
+{
+  "name": "node-nats-examples",
+  "version": "1.0.0",
+  "description": "node-nats documentation examples",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsc && ava --verbose -T 15000",
+    "debugtest": "tsc && node $NODE_DEBUG_OPTION node_modules/.bin/ava --verbose -T 6500000 -m",
+    "clean": "rm -Rf build/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com//nats-io/node-nats-examples"
+  },
+  "author": "The NATS Authors",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "nats": "^1.0.1",
+    "typescript": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "ava": "^1.0.0-beta.6"
+  },
+  "ava": {
+    "failFast": false,
+    "require": [],
+    "files": [
+      "./build/**/*.js"
+    ],
+    "sources": [
+      "**/*.js"
+    ]
+  }
+}

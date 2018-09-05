@@ -1,5 +1,6 @@
 let NATS = require('nats');
 let nsc = require("./_nats_server_control");
+let url = require('url');
 import test from 'ava';
 
 let servers = [];
@@ -33,7 +34,7 @@ test('connect_userpass', async (t) => {
 test('connect_userpass_url', async (t) => {
     let server =  await nsc.startServer("", ["--user", "myname", "--pass", "password"]);
     servers.push(server);
-    let port = new URL(server.ports.nats[0]).port;
+    let port = url.parse(server.ports.nats[0]).port;
 
     return new Promise((resolve, reject) => {
         // [begin connect_userpass_url]
@@ -55,7 +56,7 @@ test('connect_userpass_url', async (t) => {
 test('connect_token_url', async (t) => {
     let server =  await nsc.startServer("", ["--auth", "mytoken!"]);
     servers.push(server);
-    let port = new URL(server.ports.nats[0]).port;
+    let port = url.parse(server.ports.nats[0]).port;
     t.log('started', port);
 
     return new Promise((resolve, reject) => {
@@ -74,7 +75,7 @@ test('connect_token_url', async (t) => {
 test('connect_token', async (t) => {
     let server =  await nsc.startServer("", ["--auth", "mytoken!"]);
     servers.push(server);
-    let port = new URL(server.ports.nats[0]).port;
+    let port = url.parse(server.ports.nats[0]).port;
 
     return new Promise((resolve, reject) => {
         // [begin connect_token]

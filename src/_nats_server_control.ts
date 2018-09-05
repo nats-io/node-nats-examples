@@ -19,8 +19,8 @@ import * as net from 'net';
 import {Socket} from 'net';
 import path from 'path'
 import fs from 'fs'
-import {URL} from 'url';
 import Timer = NodeJS.Timer;
+let url = require('url');
 
 let SERVER = (process.env.TRAVIS) ? 'gnatsd/gnatsd' : 'gnatsd';
 let PID_DIR = (process.env.TRAVIS) ? process.env.TRAVIS_BUILD_DIR : process.env.TMPDIR;
@@ -55,7 +55,7 @@ export function wsURL(s: Server): string {
 }
 
 export function getPort(urlString: string): number {
-    let u = new URL(urlString);
+    let u = url.parse(urlString);
     return parseInt(u.port, 10);
 }
 

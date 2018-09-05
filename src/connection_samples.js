@@ -65,7 +65,13 @@ test('connect_multiple', (t) => {
             resolve();
         }
         // [begin connect_multiple]
-        let nc = NATS.connect({servers: ["nats://demo.nats.io:4222", "nats://localhost:4222"]});
+        let nc = NATS.connect({
+            servers: [
+                "nats://demo.nats.io:4222",
+                "nats://localhost:4222"
+            ]}
+        );
+
         nc.on('connect', (c) => {
             // Do something with the connection
             doSomething();

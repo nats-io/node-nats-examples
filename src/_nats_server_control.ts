@@ -97,7 +97,7 @@ export function startServer(hostport?: string, opt_flags?: string[]): Promise<Se
         let server = spawn(SERVER, flags) as Server;
         // server.stderr.on('data', function (data) {
         //     let lines = data.toString().split('\n');
-        //     lines.forEach((m) => {
+        //     lines.forEach((m: string) => {
         //         console.log(m);
         //     });
         // });

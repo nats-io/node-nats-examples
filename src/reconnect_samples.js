@@ -88,8 +88,15 @@ test('reconnect_event', async (t) => {
             resolve();
         });
     });
-
 });
+
+test('reconnect_5mb', (t) => {
+    // [begin reconnect_5mb]
+    // Reconnect buffer size is not configurable on node-nats
+    // [end reconnect_5mb]
+    t.pass();
+});
+
 
 
 

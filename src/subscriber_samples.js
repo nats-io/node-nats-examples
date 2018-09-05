@@ -241,3 +241,10 @@ test('no_echo', (t) => {
     // [end no_echo]
     t.pass();
 });
+
+test('subscribe_sync', (t) => {
+    // [begin subscribe_sync]
+    // node-nats subscriptions are always async.
+    // [end subscribe_sync]
+    t.pass();
+});

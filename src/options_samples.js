@@ -84,3 +84,42 @@ test('connect_name', (t) => {
         });
     });
 });
+
+test('control_2k', (t) => {
+    return new Promise((resolve, reject) => {
+        // [begin control_2k]
+        // set this option before creating a connection
+        NATS.MAX_CONTROL_LINE_SIZE = 1024*2;
+        let nc = NATS.connect({
+            url: "nats://demo.nats.io:4222"
+        });
+
+        // [end control_2k]
+        nc.on('connect', () => {
+            nc.close();
+            t.pass();
+            resolve();
+        });
+    });
+});
+
+test('slow_pending_limits', (t) => {
+    // [begin slow_pending_limits]
+    // slow pending limits are not configurable on node-nats
+    // [end slow_pending_limits]
+    t.pass();
+});
+
+test('sub_pending_limits', (t) => {
+    // [begin sub_pending_limits]
+    // subscription limits are not configurable on node-nats
+    // [end sub_pending_limits]
+    t.pass();
+});
+
+test('slow_listener', (t) => {
+    // [begin slow_listener]
+    // slow consumer detection is not configurable on node-nats
+    // [end slow_listener]
+    t.pass();
+});

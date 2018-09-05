@@ -16,3 +16,11 @@ test('connect_tls_url', (t) => {
         });
     });
 });
+
+
+test('connect_tls', (t) => {
+    // [begin connect_tls]
+    // TLS connections should have a 'tls' url in node-nats.
+    // [end connect_tls]
+    t.pass();
+});

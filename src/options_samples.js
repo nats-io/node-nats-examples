@@ -110,13 +110,6 @@ test('slow_pending_limits', (t) => {
     t.pass();
 });
 
-test('sub_pending_limits', (t) => {
-    // [begin sub_pending_limits]
-    // subscription limits are not configurable on node-nats
-    // [end sub_pending_limits]
-    t.pass();
-});
-
 test('slow_listener', (t) => {
     // [begin slow_listener]
     // slow consumer detection is not configurable on node-nats

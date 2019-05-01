@@ -6,7 +6,7 @@ test('ping_20s', (t) => {
     return new Promise((resolve, reject) => {
         // [begin ping_20s]
         let nc = NATS.connect({
-            pingInterval: 20*2000, //20s
+            pingInterval: 20*1000, //20s
             url: "nats://demo.nats.io:4222"
         });
         // [end ping_20s]

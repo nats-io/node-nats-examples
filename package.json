@@ -15,7 +15,9 @@
   "author": "The NATS Authors",
   "license": "Apache-2.0",
   "dependencies": {
-    "nats": "^1.2.2",
+    "nats": "^1.2.10",
+    "nuid": "^1.1.0",
+    "ts-nkeys": "^1.0.12",
     "typescript": "^3.3.4000"
   },
   "devDependencies": {

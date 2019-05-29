@@ -6,10 +6,8 @@ test('publish_bytes', (t) => {
     t.plan(1);
     return new Promise((resolve, failed) => {
         // [begin publish_bytes]
-        let nc = NATS.connect({url: "nats://demo.nats.io:4222", preserveBuffers: true});
-        let buf = Buffer.allocUnsafe(12);
-        buf.fill("All is well");
-        nc.publish('updates', buf);
+        let nc = NATS.connect({url: "nats://demo.nats.io:4222"});
+        nc.publish('updates', "All is Well");
         // [end publish_bytes]
         nc.flush(() => {
             t.pass();

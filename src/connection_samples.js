@@ -86,9 +86,9 @@ test('connect_multiple', (t) => {
     });
 });
 
-test('drain', (t) => {
+test('drain_conn', (t) => {
     return new Promise((resolve, reject) => {
-        // [begin drain]
+        // [begin drain_conn]
         let nc = NATS.connect({url: "nats://demo.nats.io:4222"});
         let inbox = createInbox();
         let counter = 0;
@@ -108,7 +108,7 @@ test('drain', (t) => {
             // and calls resolve to pass the test
             resolve();
         });
-        // [end drain]
+        // [end drain_conn]
     });
 });
 

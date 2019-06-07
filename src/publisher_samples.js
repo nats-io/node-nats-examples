@@ -35,8 +35,8 @@ test('publish_json', (t) => {
 test('publish_with_reply', (t) => {
     t.plan(1);
     return new Promise((resolve, failed) => {
-        let nc = NATS.connect({url: "nats://demo.nats.io:4222"});
         // [begin publish_with_reply]
+        let nc = NATS.connect({url: "nats://demo.nats.io:4222"});
         // set up a subscription to process the request
         nc.subscribe('time', (msg, reply) => {
             if(reply) {
@@ -63,6 +63,7 @@ test('publish_with_reply', (t) => {
 test('request_reply', (t) => {
     t.plan(1);
     return new Promise((resolve, failed) => {
+        // [begin request_reply]
         let nc = NATS.connect({url: "nats://demo.nats.io:4222"});
 
         // set up a subscription to process the request
@@ -72,7 +73,6 @@ test('request_reply', (t) => {
             }
         });
 
-        // [begin request_reply]
         nc.requestOne('time', (msg) => {
             t.log('the time is', msg);
             nc.close();

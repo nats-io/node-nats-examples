@@ -1,12 +1,13 @@
 import test from "ava";
+import {createInbox} from "nats";
 let NATS = require('nats');
 
 test('subscribe_async', (t) => {
     return new Promise((resolve, reject) => {
+        // [begin subscribe_async]
         let nc = NATS.connect({
             url: "nats://demo.nats.io:4222"
         });
-        // [begin subscribe_async]
         nc.subscribe("updates", (msg) => {
             t.log(msg);
         });
@@ -21,11 +22,11 @@ test('subscribe_async', (t) => {
 
 test('subscribe_w_reply', async(t) => {
     return new Promise((resolve, reject) => {
+        // [begin subscribe_w_reply]
         let nc = NATS.connect({
             url: "nats://demo.nats.io:4222"
         });
 
-        // [begin subscribe_w_reply]
         // set up a subscription to process a request
         nc.subscribe('time', (msg, reply) => {
             if (msg.reply) {
@@ -47,11 +48,10 @@ test('subscribe_w_reply', async(t) => {
 
 test('unsubscribe', (t) => {
     return new Promise((resolve, reject) => {
+        // [begin unsubscribe]
         let nc = NATS.connect({
             url: "nats://demo.nats.io:4222"
         });
-
-        // [begin unsubscribe]
         // set up a subscription to process a request
         let sub = nc.subscribe(NATS.createInbox(), (msg, reply) => {
             if (msg.reply) {
@@ -98,11 +98,10 @@ test('subscribe_json', (t) => {
 
 test('unsubscribe_auto', (t) => {
     return new Promise((resolve, reject) => {
+        // [begin unsubscribe_auto]
         let nc = NATS.connect({
             url: "nats://demo.nats.io:4222"
         });
-
-        // [begin unsubscribe_auto]
         // `max` specifies the number of messages that the server will forward.
         // The server will auto-cancel.
         let opts = {max: 10};
@@ -128,10 +127,10 @@ test('unsubscribe_auto', (t) => {
 
 test('subscribe_star', (t) => {
     return new Promise((resolve, reject) => {
+        // [begin subscribe_star]
         let nc = NATS.connect({
             url: "nats://demo.nats.io:4222"});
 
-        // [begin subscribe_star]
         nc.subscribe('time.us.*', (msg, reply, subject) => {
             // converting timezones correctly in node requires a library
             // this doesn't take into account *many* things.
@@ -170,10 +169,10 @@ test('subscribe_star', (t) => {
 
 test('subscribe_arrow', async(t) => {
     return new Promise((resolve, reject) => {
+        // [begin subscribe_arrow]
         let nc = NATS.connect({
             url: "nats://demo.nats.io:4222"});
 
-        // [begin subscribe_arrow]
         nc.subscribe('time.>', (msg, reply, subject) => {
             // converting timezones correctly in node requires a library
             // this doesn't take into account *many* things.
@@ -211,10 +210,10 @@ test('subscribe_arrow', async(t) => {
 
 test('subscribe_queue', (t) => {
     return new Promise((resolve, reject) => {
+        // [begin subscribe_queue]
         let nc = NATS.connect({
             url: "nats://demo.nats.io:4222"});
 
-        // [begin subscribe_queue]
         nc.subscribe('updates', {queue: "workers"}, (msg) => {
             t.log('worker got message', msg);
         });
@@ -229,17 +228,45 @@ test('subscribe_queue', (t) => {
 });
 
 test('drain_sub', (t) => {
-    // [begin drain_sub]
-    // Drain subscription is not supported.
-    // [end drain_sub]
-    t.pass();
+    return new Promise((resolve, reject) => {
+        // [begin drain_sub]
+        let nc = NATS.connect({url: "nats://demo.nats.io:4222"});
+        let inbox = createInbox();
+        let counter = 0;
+        let sid = nc.subscribe(inbox, () => {
+            counter++;
+        });
+
+        nc.publish(inbox);
+        nc.drainSubscription(sid, (err)=> {
+            if(err) {
+                t.log(err);
+            }
+            t.log('processed', counter, 'messages');
+        });
+        nc.flush(() => {
+            nc.close();
+            t.pass();
+            resolve();
+        });
+        // [end drain_sub]
+    });
 });
 
 test('no_echo', (t) => {
-    // [begin no_echo]
-    // no_echo is not supported.
-    // [end no_echo]
-    t.pass();
+    return new Promise((resolve, reject) => {
+        // [begin no_echo]
+        let nc = NATS.connect({
+            url: "nats://demo.nats.io:4222",
+            noEcho: true
+        });
+        // [end no_echo]
+        nc.flush(() => {
+            nc.close();
+            t.pass();
+            resolve();
+        });
+    });
 });
 
 test('subscribe_sync', (t) => {

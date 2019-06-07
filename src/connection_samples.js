@@ -1,3 +1,5 @@
+import {createInbox} from "nats";
+
 let NATS = require('nats');
 let nsc = require("./_nats_server_control");
 import test from 'ava';
@@ -71,7 +73,6 @@ test('connect_multiple', (t) => {
                 "nats://localhost:4222"
             ]}
         );
-
         nc.on('connect', (c) => {
             // Do something with the connection
             doSomething();
@@ -82,6 +83,32 @@ test('connect_multiple', (t) => {
             failed(err);
         });
         // [end connect_multiple]
+    });
+});
+
+test('drain', (t) => {
+    return new Promise((resolve, reject) => {
+        // [begin drain]
+        let nc = NATS.connect({url: "nats://demo.nats.io:4222"});
+        let inbox = createInbox();
+        let counter = 0;
+        nc.subscribe(inbox, () => {
+            counter++;
+        });
+
+        nc.publish(inbox);
+        nc.drain((err)=> {
+            if(err) {
+                t.log(err);
+            }
+            t.log('connection is closed:', nc.closed);
+            t.log('processed', counter, 'messages');
+            t.pass();
+            // the snippet is running as a promise in a test
+            // and calls resolve to pass the test
+            resolve();
+        });
+        // [end drain]
     });
 });
 

@@ -122,7 +122,7 @@ test('connect_nkey', async (t) => {
     const nc = NATS.connect({
       url: server.nats,
       nkey: 'UD6OU4D3CIOGIDZVL4ANXU3NWXOW5DCDE2YPZDBHPBXCVKHSODUA4FKI',
-      sigCB: function (nonce) {
+      nonceSigner: function (nonce) {
         const sk = nkeys.fromSeed(Buffer.from(seed))
         return sk.sign(nonce)
       }
@@ -191,7 +191,7 @@ SUAIBDPBAUTWCWBKIO6XHQNINK5FWJW4OHLXC3HQ2KFE4PEJUA44CNHTC4
 
     const nc = NATS.connect({
       url: server.nats,
-      userCreds: credsFile
+      credsFile: credsFile
     })
     // [end connect_creds]
     nc.on('connect', () => {

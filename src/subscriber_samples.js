@@ -1,5 +1,5 @@
 import test from 'ava'
-import { createInbox } from 'nats'
+import { createInbox, Payload } from 'nats'
 const NATS = require('nats')
 
 test('subscribe_async', (t) => {
@@ -8,8 +8,8 @@ test('subscribe_async', (t) => {
     const nc = NATS.connect({
       url: 'nats://demo.nats.io:4222'
     })
-    nc.subscribe('updates', (msg) => {
-      t.log(msg)
+    nc.subscribe('updates', (_, msg) => {
+      t.log(msg.data)
     })
     // [end subscribe_async]
     nc.publish('updates', 'All is Well!', () => {
@@ -28,14 +28,14 @@ test('subscribe_w_reply', async (t) => {
     })
 
     // set up a subscription to process a request
-    nc.subscribe('time', (msg, reply) => {
-      if (reply) {
-        nc.publish(reply, new Date().toLocaleTimeString())
+    nc.subscribe('time', (_, msg) => {
+      if (msg.reply) {
+        msg.respond(new Date().toLocaleTimeString())
       }
     })
     // [end subscribe_w_reply]
-    nc.requestOne('time', (msg) => {
-      t.log('the time is', msg)
+    nc.request('time', (_, msg) => {
+      t.log('the time is', msg.data)
     })
 
     nc.flush(() => {
@@ -61,7 +61,7 @@ test('unsubscribe', (t) => {
 
     // without arguments the subscription will cancel when the server receives it
     // you can also specify how many messages are expected by the subscription
-    nc.unsubscribe(sub)
+    sub.unsubscribe()
     // [end unsubscribe]
     nc.flush(() => {
       nc.close()
@@ -76,12 +76,17 @@ test('subscribe_json', (t) => {
     // [begin subscribe_json]
     const nc = NATS.connect({
       url: 'nats://demo.nats.io:4222',
-      json: true
+      payload: Payload.JSON
     })
 
-    nc.subscribe('updates', (msg) => {
-      if (msg && msg.ticker === 'TSLA') {
-        t.log('got message:', msg)
+    nc.subscribe('updates', (err, msg) => {
+      if (err) {
+        t.log('got error:', err)
+        t.fail(err)
+        return
+      }
+      if (msg.data && msg.data.ticker === 'TSLA') {
+        t.log('got message:', msg.data)
       }
     })
 
@@ -105,17 +110,27 @@ test('unsubscribe_auto', (t) => {
     // The server will auto-cancel.
     const subj = NATS.createInbox()
     const opts = { max: 10 }
-    nc.subscribe(subj, opts, (msg) => {
-      t.log('sub1', msg)
-    })
+    nc.subscribe(subj, (err, msg) => {
+      if (err) {
+        t.log('error', err)
+        t.fail(err)
+        return
+      }
+      t.log('sub1', msg.data)
+    }, opts)
 
     // another way after 10 messages
-    const sub = nc.subscribe(subj, (msg) => {
-      t.log('sub2', msg)
+    const sub = nc.subscribe(subj, (err, msg) => {
+      if (err) {
+        t.log('error', err)
+        t.fail(err)
+        return
+      }
+      t.log('sub2', msg.data)
     })
     // if the subscription already received 10 messages, the handler
     // won't get any more messages
-    nc.unsubscribe(sub, 10)
+    sub.unsubscribe(10)
     // [end unsubscribe_auto]
 
     for (let i = 0; i < 10; i++) {
@@ -131,15 +146,20 @@ test('unsubscribe_auto', (t) => {
 })
 
 test('subscribe_star', (t) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // [begin subscribe_star]
     const nc = NATS.connect({ url: 'nats://demo.nats.io:4222' })
 
-    nc.subscribe('time.us.*', (msg, reply, subject) => {
+    nc.subscribe('time.us.*', (err, msg) => {
+      if (err) {
+        t.log('error', err)
+        t.fail(err)
+        return
+      }
       // converting timezones correctly in node requires a library
       // this doesn't take into account *many* things.
       let time = ''
-      switch (subject) {
+      switch (msg.subject) {
         case 'time.us.east':
           time = new Date().toLocaleTimeString('en-us', { timeZone: 'America/New_York' })
           break
@@ -155,7 +175,7 @@ test('subscribe_star', (t) => {
         default:
           time = "I don't know what you are talking about Willis"
       }
-      t.log(subject, time)
+      t.log(msg.subject, time)
     })
     // [end subscribe_star]
     nc.publish('time.us.east')
@@ -171,15 +191,20 @@ test('subscribe_star', (t) => {
 })
 
 test('subscribe_arrow', async (t) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // [begin subscribe_arrow]
     const nc = NATS.connect({ url: 'nats://demo.nats.io:4222' })
 
-    nc.subscribe('time.>', (msg, reply, subject) => {
+    nc.subscribe('time.>', (err, msg) => {
+      if (err) {
+        t.log('error', err)
+        t.fail(err)
+        return
+      }
       // converting timezones correctly in node requires a library
       // this doesn't take into account *many* things.
       let time = ''
-      switch (subject) {
+      switch (msg.subject) {
         case 'time.us.east':
           time = new Date().toLocaleTimeString('en-us', { timeZone: 'America/New_York' })
           break
@@ -195,7 +220,7 @@ test('subscribe_arrow', async (t) => {
         default:
           time = "I don't know what you are talking about Willis"
       }
-      t.log(subject, time)
+      t.log(msg.subject, time)
     })
     // [end subscribe_arrow]
     nc.publish('time.us.east')
@@ -211,13 +236,13 @@ test('subscribe_arrow', async (t) => {
 })
 
 test('subscribe_queue', (t) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // [begin subscribe_queue]
     const nc = NATS.connect({ url: 'nats://demo.nats.io:4222' })
 
-    nc.subscribe('updates', { queue: 'workers' }, (msg) => {
-      t.log('worker got message', msg)
-    })
+    nc.subscribe('updates', (_, msg) => {
+      t.log('worker got message', msg.data)
+    }, { queue: 'workers' })
     // [end subscribe_queue]
     nc.publish('updates')
     nc.flush(() => {
@@ -229,17 +254,16 @@ test('subscribe_queue', (t) => {
 })
 
 test('drain_sub', (t) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // [begin drain_sub]
     const nc = NATS.connect({ url: 'nats://demo.nats.io:4222' })
     const inbox = createInbox()
     let counter = 0
-    const sid = nc.subscribe(inbox, () => {
+    const sub = nc.subscribe(inbox, () => {
       counter++
     })
-
     nc.publish(inbox)
-    nc.drainSubscription(sid, (err) => {
+    sub.drain((err) => {
       if (err) {
         t.log(err)
       }
@@ -255,7 +279,7 @@ test('drain_sub', (t) => {
 })
 
 test('no_echo', (t) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // [begin no_echo]
     const nc = NATS.connect({
       url: 'nats://demo.nats.io:4222',

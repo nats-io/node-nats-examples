@@ -1,5 +1,6 @@
 import test from 'ava'
 const NATS = require('nats')
+const Payload = require('nats').Payload
 
 test('publish_bytes', (t) => {
   t.plan(1)
@@ -20,7 +21,7 @@ test('publish_json', (t) => {
   t.plan(1)
   return new Promise((resolve) => {
     // [begin publish_json]
-    const nc = NATS.connect({ url: 'nats://demo.nats.io:4222', json: true })
+    const nc = NATS.connect({ url: 'nats://demo.nats.io:4222', payload: Payload.JSON })
     nc.publish('updates', { ticker: 'GOOG', price: 1200 })
     // [end publish_json]
     nc.flush(() => {
@@ -37,20 +38,20 @@ test('publish_with_reply', (t) => {
     // [begin publish_with_reply]
     const nc = NATS.connect({ url: 'nats://demo.nats.io:4222' })
     // set up a subscription to process the request
-    nc.subscribe('time', (msg, reply) => {
-      if (reply) {
-        nc.publish(reply, new Date().toLocaleTimeString())
+    nc.subscribe('time', (_, msg) => {
+      if (msg.reply) {
+        msg.respond(new Date().toLocaleTimeString())
       }
     })
 
     // create a subscription subject that the responding send replies to
     const inbox = NATS.createInbox()
-    nc.subscribe(inbox, { max: 1 }, (msg) => {
-      t.log('the time is', msg)
+    nc.subscribe(inbox, (_, msg) => {
+      t.log('the time is', msg.data)
       nc.close()
-    })
+    }, { max: 1 })
 
-    nc.publish('time', '', inbox)
+    nc.publishRequest('time', inbox)
     // [end publish_with_reply]
     nc.flush(() => {
       t.pass()
@@ -66,14 +67,14 @@ test('request_reply', (t) => {
     const nc = NATS.connect({ url: 'nats://demo.nats.io:4222' })
 
     // set up a subscription to process the request
-    nc.subscribe('time', (msg, reply) => {
-      if (reply) {
-        nc.publish(reply, new Date().toLocaleTimeString())
+    nc.subscribe('time', (_, msg) => {
+      if (msg.reply) {
+        msg.respond(new Date().toLocaleTimeString())
       }
     })
 
-    nc.requestOne('time', (msg) => {
-      t.log('the time is', msg)
+    nc.request('time', (_, msg) => {
+      t.log('the time is', msg.data)
       nc.close()
     })
     // [end request_reply]
@@ -108,11 +109,16 @@ test('flush', (t) => {
 test('wildcard_tester', async (t) => {
   return new Promise((resolve) => {
     const nc = NATS.connect({ url: 'nats://demo.nats.io:4222' })
-    nc.subscribe('time.>', (msg, reply, subject) => {
+    nc.subscribe('time.>', (err, msg) => {
+      if (err) {
+        t.log('error', err)
+        t.fail(err)
+        return
+      }
       // converting timezones correctly in node requires a library
       // this doesn't take into account *many* things.
       let time = ''
-      switch (subject) {
+      switch (msg.subject) {
         case 'time.us.east':
           time = new Date().toLocaleTimeString('en-us', { timeZone: 'America/New_York' })
           break
@@ -128,7 +134,7 @@ test('wildcard_tester', async (t) => {
         default:
           time = "I don't know what you are talking about Willis"
       }
-      t.log(subject, time)
+      t.log(msg.subject, time)
     })
 
     // [begin wildcard_tester]

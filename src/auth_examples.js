@@ -10,7 +10,7 @@ import {writeFileSync} from 'fs';
 import test from 'ava';
 
 let servers = [];
-test.after.always((t) => {
+test.after.always(() => {
     servers.forEach((s) => {
         nsc.stopServer(s);
     });
@@ -18,10 +18,10 @@ test.after.always((t) => {
 
 
 test('connect_userpass', async (t) => {
-    let server =  await nsc.startServer("", ["--user", "myname", "--pass", "password"]);
+    let server =  await nsc.startServer(["--user", "myname", "--pass", "password"]);
     servers.push(server);
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         // [begin connect_userpass]
         let nc = NATS.connect({url: server.nats, user: "myname", pass: "password"});
         // [end connect_userpass]
@@ -38,11 +38,11 @@ test('connect_userpass', async (t) => {
 });
 
 test('connect_userpass_url', async (t) => {
-    let server =  await nsc.startServer("", ["--user", "myname", "--pass", "password"]);
+    let server =  await nsc.startServer(["--user", "myname", "--pass", "password"]);
     servers.push(server);
     let port = url.parse(server.ports.nats[0]).port;
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         // [begin connect_userpass_url]
         let url = `nats://myname:password@127.0.0.1:${port}`;
         let nc = NATS.connect(url);
@@ -60,12 +60,12 @@ test('connect_userpass_url', async (t) => {
 });
 
 test('connect_token_url', async (t) => {
-    let server =  await nsc.startServer("", ["--auth", "mytoken!"]);
+    let server =  await nsc.startServer(["--auth", "mytoken!"]);
     servers.push(server);
     let port = url.parse(server.ports.nats[0]).port;
     t.log('started', port);
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         // [begin connect_token_url]
         let url = `nats://mytoken!@127.0.0.1:${port}`;
         let nc = NATS.connect({url: url});
@@ -79,11 +79,11 @@ test('connect_token_url', async (t) => {
 });
 
 test('connect_token', async (t) => {
-    let server =  await nsc.startServer("", ["--auth", "mytoken!"]);
+    let server =  await nsc.startServer(["--auth", "mytoken!"]);
     servers.push(server);
     let port = url.parse(server.ports.nats[0]).port;
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         // [begin connect_token]
         let nc = NATS.connect({url: `nats://127.0.0.1:${port}`, token: "mytoken!"});
         // [end connect_token]
@@ -115,7 +115,7 @@ test('connect_nkey', async (t) => {
     let server = await nsc.startServer(['-c', fp]);
     servers.push(server);
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         // [begin connect_nkey]
         // seed should be stored in a file and treated like a secret
         const seed = 'SUAEL6GG2L2HIF7DUGZJGMRUFKXELGGYFMHF76UO2AYBG3K4YLWR3FKC2Q';
@@ -188,7 +188,7 @@ SUAIBDPBAUTWCWBKIO6XHQNINK5FWJW4OHLXC3HQ2KFE4PEJUA44CNHTC4
     let server = await nsc.startServer(['-c', fp]);
     servers.push(server);
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         // [begin connect_creds]
         // credentials file contains the JWT and the secret signing key
         let credsFile = path.join(confDir, 'credsfile.creds');

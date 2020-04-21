@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The NATS Authors
+ * Copyright 2018-2020 The NATS Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,16 +14,15 @@
  *
  */
 
-import {ChildProcess, execSync, spawn} from 'child_process';
+import {ChildProcess, spawn, execSync} from 'child_process';
 import * as net from 'net';
 import {Socket} from 'net';
-import path from 'path'
-import fs from 'fs'
+import path from 'path';
+import fs from 'fs';
+import {URL} from 'url';
 import Timer = NodeJS.Timer;
 
-let url = require('url');
-
-let SERVER = (process.env.TRAVIS) ? 'gnatsd/gnatsd' : 'gnatsd';
+let SERVER = (process.env.TRAVIS) ? 'nats-server/nats-server' : 'nats-server';
 let PID_DIR = (process.env.TRAVIS) ? process.env.TRAVIS_BUILD_DIR : process.env.TMPDIR;
 
 let SERVER_VERSION: any[];
@@ -58,31 +57,50 @@ export function wsURL(s: Server): string {
 }
 
 export function getPort(urlString: string): number {
-    let u = url.parse(urlString);
+    let u = new URL(urlString);
     return parseInt(u.port, 10);
 }
 
-export function startServer(hostport?: string, opt_flags?: string[]): Promise<Server> {
+export function addClusterMember(s: Server, opt_flags?: string[]): Promise<Server> {
     return new Promise((resolve, reject) => {
         opt_flags = opt_flags || [];
-        let flags : string[] = [];
+        if (opt_flags.indexOf('--routes') !== -1) {
+            reject(new Error('addClusterMember doesn\'t take a --routes flag as an option'));
+            return;
+        }
+
+        opt_flags = opt_flags.concat(['--routes', `nats://127.0.0.1:${s.clusterPort}`]);
+        startServer(opt_flags)
+          .then((v) => {
+              resolve(v);
+          })
+          .catch((err) => {
+              reject(err);
+          });
+    });
+}
+
+export function startServer(opt_flags?: string[]): Promise<Server> {
+    return new Promise((resolve, reject) => {
+        opt_flags = opt_flags || [];
+        let flags: string[] = [];
 
         // filter host
         if (opt_flags.indexOf('-a') === -1) {
-            flags = flags.concat(["-a", "127.0.0.1"]);
+            flags = flags.concat(['-a', '127.0.0.1']);
         }
 
         // filter port -p or --port
         if (opt_flags.indexOf('-p') === -1 && opt_flags.indexOf('--port') === -1) {
-            flags = flags.concat(["-p", "-1"]);
+            flags = flags.concat(['-p', '-1']);
         }
 
         if (opt_flags.indexOf('--cluster') === -1) {
-            flags = flags.concat(["--cluster", "nats://127.0.0.1:-1"]);
+            flags = flags.concat(['--cluster', 'nats://127.0.0.1:-1']);
         }
 
         if (opt_flags.indexOf('--http_port') === -1 && opt_flags.indexOf('-m') === -1) {
-            flags = flags.concat(["--m", "-1"]);
+            flags = flags.concat(['--m', '-1']);
         }
 
         flags = flags.concat(['--ports_file_dir', PID_DIR] as string[]);
@@ -94,10 +112,11 @@ export function startServer(hostport?: string, opt_flags?: string[]): Promise<Se
         }
 
         if (process.env.PRINT_LAUNCH_CMD) {
-            console.log(flags.join(" "));
+            console.log(flags.join(' '));
         }
 
         let server = spawn(SERVER, flags) as Server;
+        // //@ts-ignore
         // server.stderr.on('data', function (data) {
         //     let lines = data.toString().split('\n');
         //     lines.forEach((m: string) => {
@@ -145,7 +164,7 @@ export function startServer(hostport?: string, opt_flags?: string[]): Promise<Se
                     rjct('Unable to find the pid');
                 }
                 //@ts-ignore
-                let portsFile = path.join(PID_DIR, `gnatsd_${server.pid}.ports`);
+                let portsFile = path.join(PID_DIR, `nats-server_${server.pid}.ports`);
                 if (fs.existsSync(portsFile)) {
                     let data = fs.readFileSync(portsFile).toString();
                     let s = (server as Server);
@@ -184,14 +203,14 @@ export function startServer(hostport?: string, opt_flags?: string[]): Promise<Se
 
                 // Wait for next try..
                 socket.on('error', function (error) {
-                    finish(new Error("Problem connecting to server on port: " + port + " (" + error + ")"));
+                    finish(new Error('Problem connecting to server on port: ' + port + ' (' + error + ')'));
                 });
 
             }, delta);
         })
-            .catch((err) => {
-                reject(err);
-            });
+          .catch((err) => {
+              reject(err);
+          });
 
 
         // Other way to catch another server running.
@@ -202,6 +221,7 @@ export function startServer(hostport?: string, opt_flags?: string[]): Promise<Se
         });
 
         // Server does not exist..
+        // @ts-ignore
         server.stderr.on('data', function (data) {
             if (/^execvp\(\)/.test(data.toString())) {
                 if (timer) {

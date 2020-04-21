@@ -4,8 +4,8 @@ let fs = require('fs');
 let NATS = require('nats');
 let nsc = require("./_nats_server_control");
 
-let serverCertPath = join(__dirname, "../certs/server-cert.pem");
-let serverKeyPath = join(__dirname, "../certs/server-key.pem");
+let serverCertPath = join(__dirname, "../certs/server.pem");
+let serverKeyPath = join(__dirname, "../certs/key.pem");
 let caCertPath = join(__dirname, "../certs/ca.pem");
 let clientCertPath = join(__dirname, "../certs/client-cert.pem");
 let clientKeyPath = join(__dirname, "../certs/client-key.pem");
@@ -13,7 +13,7 @@ let clientKeyPath = join(__dirname, "../certs/client-key.pem");
 test.before(async (t) => {
     t.log(__dirname);
 
-    let server = await nsc.startServer("", ["--tlscert", serverCertPath, "--tlskey", serverKeyPath]);
+    let server = await nsc.startServer(["--tlsverify", "--tlscert", serverCertPath, "--tlskey", serverKeyPath, "--tlscacert", caCertPath]);
     t.context = {server: server};
 });
 
@@ -22,7 +22,7 @@ test.after.always((t) => {
 });
 
 test('connect_tls_url', (t) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         // [begin connect_tls_url]
         let nc = NATS.connect({
             url: "tls://demo.nats.io:4443",
@@ -39,7 +39,7 @@ test('connect_tls_url', (t) => {
 
 
 test('connect_tls',  (t) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         let url = t.context.server.nats;
         // [begin connect_tls]
         let caCert = fs.readFileSync(caCertPath);
@@ -58,6 +58,6 @@ test('connect_tls',  (t) => {
             nc.close();
             t.pass();
             resolve();
-        });
+        })
     });
 });

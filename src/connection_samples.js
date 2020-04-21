@@ -5,7 +5,7 @@ let nsc = require("./_nats_server_control");
 import test from 'ava';
 
 test.before(async (t) => {
-    let server = await nsc.startServer("", ["-p", "4222"]);
+    let server = await nsc.startServer(["-p", "4222"]);
     t.context = {server: server};
 });
 
@@ -87,7 +87,7 @@ test('connect_multiple', (t) => {
 });
 
 test('drain_conn', (t) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         // [begin drain_conn]
         let nc = NATS.connect({url: "nats://demo.nats.io:4222"});
         let inbox = createInbox();

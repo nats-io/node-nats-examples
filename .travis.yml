@@ -1,10 +1,7 @@
 language: node_js
-sudo: false
 
 node_js:
-- "8"
-- "10"
-- "11"
+- "13"
 
 cache: npm
 
@@ -12,14 +9,12 @@ git:
   depth: false
 
 env:
-  global:
-  - NATS_VERSION=v1.4.1
-  - NODE_EXTRA_CA_CERTS=$TRAVIS_BUILD_DIR/certs/ca.pem
+  - NATS_VERSION=v2.1.6
 
 before_script:
-  - wget "https://github.com/nats-io/gnatsd/releases/download/$NATS_VERSION/gnatsd-$NATS_VERSION-linux-amd64.zip" -O tmp.zip
+  - wget "https://github.com/nats-io/nats-server/releases/download/$NATS_VERSION/nats-server-$NATS_VERSION-linux-amd64.zip" -O tmp.zip
   - unzip tmp.zip
-  - mv gnatsd-$NATS_VERSION-linux-amd64 gnatsd
+  - mv nats-server-$NATS_VERSION-linux-amd64 nats-server
 
 script:
 - npm test

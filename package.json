@@ -6,7 +6,9 @@
   "scripts": {
     "test": "tsc && ava --verbose -T 15000",
     "debugtest": "tsc && node node_modules/.bin/ava --verbose -T 6500000 -m",
-    "clean": "rm -Rf build/"
+    "clean": "rm -Rf build/",
+    "lint": "standard './src/*.js'",
+    "fmt": "standard --fix './src/*.js'"
   },
   "engines": {
     "node": ">= 13.0.0"
@@ -21,8 +23,10 @@
   "devDependencies": {
     "@types/node": "^13.13.1",
     "ava": "^3.7.1",
+    "eslint": "^6.8.0",
     "nats": "^1.4.8",
     "nuid": "^1.1.4",
+    "standard": "^14.3.3",
     "ts-nkeys": "^1.0.16",
     "typescript": "^3.8.3"
   },

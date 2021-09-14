@@ -1,4 +1,4 @@
-name: javascript-nats-examples CI
+name: node-nats-examples CI
 
 on:
   push:

@@ -1,5 +1,5 @@
 import test from "ava";
-import { NatsServer } from "./launcher";
+const { NatsServer } = require("./helpers/launcher");
 import { connect, createInbox } from "nats";
 
 const conf = {

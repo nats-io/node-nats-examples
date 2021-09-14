@@ -1,113 +1,71 @@
-import { createInbox } from 'nats'
-import test from 'ava'
+import test from "ava";
+import { NatsServer } from "./launcher";
+import { connect, createInbox } from "nats";
 
-const NATS = require('nats')
-const nsc = require('./_nats_server_control')
+const conf = {
+  authorization: {
+    token: "aToK3n",
+    PERM: {
+      subscribe: "bar",
+      publish: "foo",
+    },
+    users: [{
+      user: "byname",
+      password: "password",
+      permission: "$PERM",
+    }, {
+      user: "withnkey",
+      nkey: "UD6OU4D3CIOGIDZVL4ANXU3NWXOW5DCDE2YPZDBHPBXCVKHSODUA4FKI",
+    }],
+  },
+};
 
-test.before(async (t) => {
-  const server = await nsc.startServer(['-p', '4222'])
-  t.context = { server: server }
-})
+function doSomething() {}
 
-test.after.always((t) => {
-  // @ts-ignore
-  nsc.stopServer(t.context.server)
-})
+test("connect_default", async (t) => {
+  const ns = await NatsServer.start({ port: 4222 });
+  const nc = await connect();
+  // Do something with the connection
+  doSomething();
+  // When done close it
+  await nc.close();
+  // [end connect_default]
+  t.pass();
+  await ns.stop();
+});
 
-test('connect_default', (t) => {
-  t.plan(1)
-  return new Promise((resolve, reject) => {
-    function doSomething () {
-      t.pass()
-      resolve()
-    }
-    // [begin connect_default]
-    const nc = NATS.connect()
-    nc.on('connect', (c) => {
-      // Do something with the connection
-      doSomething()
-      // When done close it
-      nc.close()
-    })
-    nc.on('error', (err) => {
-      reject(err)
-    })
-    // [end connect_default]
-  })
-})
+test("connect_url", async (t) => {
+  // [begin connect_url]
+  const nc = await connect({ servers: "demo.nats.io" });
+  // Do something with the connection
+  doSomething();
+  await nc.close();
+  // [end connect_url
+  t.pass();
+});
 
-test('connect_url', (t) => {
-  t.plan(1)
-  return new Promise((resolve, reject) => {
-    function doSomething () {
-      t.pass()
-      resolve()
-    }
-    // [begin connect_url]
-    const nc = NATS.connect('nats://demo.nats.io:4222')
-    nc.on('connect', (c) => {
-      // Do something with the connection
-      doSomething()
-      // When done close it
-      nc.close()
-    })
-    nc.on('error', (err) => {
-      reject(err)
-    })
-    // [end connect_url]
-  })
-})
+test("connect_multiple", async (t) => {
+  // [begin connect_multiple]
+  const nc = await connect({
+    servers: [
+      "nats://demo.nats.io:4222",
+      "nats://localhost:4222",
+    ],
+  });
+  // Do something with the connection
+  doSomething();
+  // When done close it
+  await nc.close();
+  // [end connect_multiple]
+  t.pass();
+});
 
-test('connect_multiple', (t) => {
-  t.plan(1)
-  return new Promise((resolve, reject) => {
-    function doSomething () {
-      t.pass()
-      resolve()
-    }
-    // [begin connect_multiple]
-    const nc = NATS.connect({
-      servers: [
-        'nats://demo.nats.io:4222',
-        'nats://localhost:4222'
-      ]
-    }
-    )
-    nc.on('connect', (c) => {
-      // Do something with the connection
-      doSomething()
-      // When done close it
-      nc.close()
-    })
-    nc.on('error', (err) => {
-      reject(err)
-    })
-    // [end connect_multiple]
-  })
-})
-
-test('drain_conn', (t) => {
-  return new Promise((resolve) => {
-    // [begin drain_conn]
-    const nc = NATS.connect({ url: 'nats://demo.nats.io:4222' })
-    const inbox = createInbox()
-    let counter = 0
-    nc.subscribe(inbox, () => {
-      counter++
-    })
-
-    nc.publish(inbox)
-    nc.drain((err) => {
-      if (err) {
-        t.log(err)
-      }
-      t.log('connection is closed:', nc.closed)
-      t.log('processed', counter, 'messages')
-      t.pass()
-      // the snippet is running as a promise in a test
-      // and calls resolve to pass the test
-      resolve()
-    })
-    // [end drain_conn]
-  })
-})
+test("drain_conn", async (t) => {
+  // [begin drain_conn]
+  const nc = await connect({ servers: "demo.nats.io" });
+  const sub = nc.subscribe(createInbox(), () => {});
+  nc.publish(sub.getSubject());
+  await nc.drain();
+  // [end drain_conn]
+  t.pass();
+});

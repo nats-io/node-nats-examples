@@ -1,124 +1,101 @@
-import test from 'ava'
-const NATS = require('nats')
+import test from "ava";
+import { connect } from "nats";
 
-test('ping_20s', (t) => {
-  return new Promise((resolve) => {
-    // [begin ping_20s]
-    const nc = NATS.connect({
-      pingInterval: 20 * 1000, // 20s
-      url: 'nats://demo.nats.io:4222'
-    })
-    // [end ping_20s]
-    nc.on('connect', () => {
-      nc.close()
-      t.pass()
-      resolve()
-    })
-  })
-})
+test("ping_20s", async (t) => {
+  // [begin ping_20s]
+  const nc = await connect({
+    pingInterval: 20 * 1000,
+    servers: ["demo.nats.io:4222"],
+  });
+  // [end ping_20s]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});
 
-test('ping_5', (t) => {
-  return new Promise((resolve) => {
-    // [begin ping_5]
-    const nc = NATS.connect({
-      maxPingOut: 5,
-      url: 'nats://demo.nats.io:4222'
-    })
-    // [end ping_5]
-    nc.on('connect', () => {
-      nc.close()
-      t.pass()
-      resolve()
-    })
-  })
-})
+test("ping_5", async (t) => {
+  // [begin ping_5]
+  const nc = await connect({
+    maxPingOut: 5,
+    servers: ["demo.nats.io:4222"],
+  });
+  // [end ping_5]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});
 
-test('connect_pedantic', (t) => {
-  return new Promise((resolve) => {
-    // [begin connect_pedantic]
-    const nc = NATS.connect({
-      url: 'nats://demo.nats.io:4222',
-      pedantic: true
-    })
+test("connect_pedantic", async (t) => {
+  // [begin connect_pedantic]
+  // the pedantic option is useful for developing nats clients.
+  // the javascript clients also provide `debug` which will
+  // print to the console all the protocol interactions
+  // with the server
+  const nc = await connect({
+    pedantic: true,
+    servers: ["demo.nats.io:4222"],
+    debug: true,
+  });
+  // [end connect_pedantic]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});
 
-    // [end connect_pedantic]
-    nc.on('connect', () => {
-      nc.close()
-      t.pass()
-      resolve()
-    })
-  })
-})
+test("connect_verbose", async (t) => {
+  // [begin connect_verbose]
+  const nc = await connect({
+    verbose: true,
+    servers: ["demo.nats.io:4222"],
+  });
 
-test('connect_verbose', (t) => {
-  return new Promise((resolve) => {
-    // [begin connect_verbose]
-    const nc = NATS.connect({
-      url: 'nats://demo.nats.io:4222',
-      verbose: true
-    })
+  // [end connect_verbose]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});
 
-    // [end connect_verbose]
-    nc.on('connect', () => {
-      nc.close()
-      t.pass()
-      resolve()
-    })
-  })
-})
+test("connect_name", async (t) => {
+  // [begin connect_name]
+  const nc = await connect({
+    name: "my-connection",
+    servers: ["demo.nats.io:4222"],
+  });
+  // [end connect_name]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});
 
-test('connect_name', (t) => {
-  return new Promise((resolve) => {
-    // [begin connect_name]
-    const nc = NATS.connect({
-      url: 'nats://demo.nats.io:4222',
-      name: 'my-connection'
-    })
+test("control_2k", async (t) => {
+  // [begin control_2k]
+  // the max control line is determined automatically by the client
+  // [end control_2k]
+  t.pass();
+});
 
-    // [end connect_name]
-    nc.on('connect', () => {
-      nc.close()
-      t.pass()
-      resolve()
-    })
-  })
-})
-
-test('control_2k', (t) => {
-  return new Promise((resolve) => {
-    // [begin control_2k]
-    // set this option before creating a connection
-    NATS.MAX_CONTROL_LINE_SIZE = 1024 * 2
-    const nc = NATS.connect({
-      url: 'nats://demo.nats.io:4222'
-    })
-
-    // [end control_2k]
-    nc.on('connect', () => {
-      nc.close()
-      t.pass()
-      resolve()
-    })
-  })
-})
-
-test('slow_pending_limits', (t) => {
+test("slow_pending_limits", (t) => {
   // [begin slow_pending_limits]
   // slow pending limits are not configurable on node-nats
   // [end slow_pending_limits]
-  t.pass()
-})
+  t.pass();
+});
 
-test('slow_listener', (t) => {
+test("slow_listener", (t) => {
   // [begin slow_listener]
   // slow consumer detection is not configurable on node-nats
   // [end slow_listener]
-  t.pass()
-})
+  t.pass();
+});
 
-test('connect_options', (t) => {
+test("connect_options", async (t) => {
   // [begin connect_options]
-  // connection timeout is not supported on node-nats
+  // timeout of 2 seconds if we fail to establish a connection
+  const nc = await connect({
+    timeout: 2 * 1000,
+    servers: ["demo.nats.io:4222"],
+  });
   // [end connect_options]
-  t.pass()
-})
+  await nc.close();
+  t.pass();
+});

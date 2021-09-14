@@ -1,144 +1,122 @@
-import test from 'ava'
-const NATS = require('nats')
+import test from "ava";
+import { connect, Status } from "nats";
 
-test('connection_listener', (t) => {
-  t.plan(1)
-  return new Promise((resolve) => {
-    function doSomething () {
-      t.pass()
-      resolve()
+test("connection_listener", async (t) => {
+  // [begin connection_listener]
+  const nc = await connect({ servers: ["demo.nats.io"] });
+  nc.closed().then(() => {
+    t.log("the connection closed!");
+  });
+
+  (async () => {
+    for await (const s of nc.status()) {
+      switch (s.type) {
+        case Status.Disconnect:
+          t.log(`client disconnected - ${s.data}`);
+          break;
+        case Status.LDM:
+          t.log("client has been requested to reconnect");
+          break;
+        case Status.Update:
+          t.log(`client received a cluster update - ${s.data}`);
+          break;
+        case Status.Reconnect:
+          t.log(`client reconnected - ${s.data}`);
+          break;
+        case Status.Error:
+          t.log("client got a permissions error");
+          break;
+        case DebugEvents.Reconnecting:
+          t.log("client is attempting to reconnect");
+          break;
+        case DebugEvents.StaleConnection:
+          t.log("client has a stale connection");
+          break;
+        default:
+          t.log(`got an unknown status ${s.type}`);
+      }
     }
-    // [begin connection_listener]
-    const nc = NATS.connect('nats://demo.nats.io:4222')
+  })().then();
 
-    nc.on('error', (err) => {
-      t.log('error', err)
-    })
+  // [end connection_listener]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});
 
-    nc.on('connect', () => {
-      t.log('client connected')
-    })
-
-    nc.on('disconnect', () => {
-      t.log('client disconnected')
-    })
-
-    nc.on('reconnecting', () => {
-      t.log('client reconnecting')
-    })
-
-    nc.on('reconnect', () => {
-      t.log('client reconnected')
-    })
-
-    nc.on('close', () => {
-      t.log('client closed')
-    })
-
-    nc.on('permission_error', (err) => {
-      t.log('permission_error', err)
-    })
-    // [end connection_listener]
-
-    nc.flush(() => {
-      doSomething()
-    })
-  })
-})
-
-test('servers_added', (t) => {
-  t.plan(1)
-  return new Promise((resolve) => {
-    function doSomething () {
-      t.pass()
-      resolve()
+test("servers_added", async (t) => {
+  // [begin servers_added]
+  const nc = await connect({ servers: ["demo.nats.io:4222"] });
+  (async () => {
+    for await (const s of nc.status()) {
+      switch (s.type) {
+        case Status.Update:
+          t.log(`servers added - ${s.data.added}`);
+          t.log(`servers deleted - ${s.data.deleted}`);
+          break;
+        default:
+      }
     }
-    // [begin servers_added]
-    const nc = NATS.connect('nats://demo.nats.io:4222')
-    nc.on('serversDiscovered', (urls) => {
-      t.log('serversDiscovered', urls)
-    })
-    // [end servers_added]
+  })().then();
+  // [end servers_added]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});
 
-    nc.flush(() => {
-      doSomething()
-    })
-  })
-})
+test("error_listener", async (t) => {
+  // [begin error_listener]
+  const nc = await connect({ servers: ["demo.nats.io"] });
 
-test('error_listener', (t) => {
-  t.plan(1)
-  return new Promise((resolve) => {
-    function doSomething () {
-      t.pass()
-      resolve()
-    }
-    // [begin error_listener]
-    const nc = NATS.connect('nats://demo.nats.io:4222')
-
-    // on node you *must* register an error listener. If not registered
-    // the library emits an 'error' event, the node process will exit.
-    nc.on('error', (err) => {
-      t.log('client got an error:', err)
-    })
-    // [end error_listener]
-
-    nc.flush(() => {
-      doSomething()
-    })
-  })
-})
-
-test('connect_status', (t) => {
-  t.plan(1)
-  return new Promise((resolve) => {
-    function doSomething () {
-      t.pass()
-      resolve()
-    }
-    // [begin connect_status]
-    const nc = NATS.connect('nats://demo.nats.io:4222')
-
-    // on node you *must* register an error listener. If not registered
-    // the library emits an 'error' event, the node process will exit.
-    nc.on('error', (err) => {
-      t.log('client got an error:', err)
-    })
-
-    if (nc.closed) {
-      t.log('client is closed')
+  // if the client gets closed with an error you can trap that
+  // condition in the closed handler like this:
+  nc.closed().then((err) => {
+    if (err) {
+      t.log(`the connection closed with an error ${err.message}`);
     } else {
-      t.log('client is not closed')
+      t.log(`the connection closed.`);
     }
-    // [end connect_status]
+  });
 
-    nc.flush(() => {
-      doSomething()
-    })
-  })
-})
-
-test('max_payload', (t) => {
-  t.plan(1)
-  return new Promise((resolve) => {
-    function doSomething () {
-      t.pass()
-      resolve()
+  // if you have a status listener, it will too get notified
+  (async () => {
+    for await (const s of nc.status()) {
+      switch (s.type) {
+        case Status.Error:
+          // typically if you get this the nats connection will close
+          t.log("client got an async error from the server");
+          break;
+        default:
+          t.log(`got an unknown status ${s.type}`);
+      }
     }
-    // [begin max_payload]
-    const nc = NATS.connect('nats://demo.nats.io:4222')
+  })().then();
+  // [end error_listener]
+  await nc.close();
+  t.pass();
+});
 
-    // on node you *must* register an error listener. If not registered
-    // the library emits an 'error' event, the node process will exit.
-    nc.on('error', (err) => {
-      t.log('client got an error:', err)
-    })
-    nc.on('connect', () => {
-      t.log('max_payload', nc.info.max_payload)
-    })
-    // [end max_payload]
-    nc.flush(() => {
-      doSomething()
-    })
-  })
-})
+test("connect_status", async (t) => {
+  const nc = await connect({ servers: ["demo.nats.io:4222"] });
+  // [begin connect_status]
+  // you can find out where you connected:
+  t.log(`connected to a nats server version ${nc.info.version}`);
+
+  // or information about the data in/out of the client:
+  const stats = nc.stats();
+  t.log(`client sent ${stats.outMsgs} messages and received ${stats.inMsgs}`);
+  // [end connect_status]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});
+
+test("max_payload", async (t) => {
+  const nc = await connect({ servers: ["demo.nats.io:4222"] });
+  // [begin max_payload]
+  t.log(`max payload for the server is ${nc.info.max_payload} bytes`);
+  // [end max_payload]
+  await nc.flush();
+  await nc.close();
+  t.pass();
+});

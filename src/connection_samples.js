@@ -24,6 +24,7 @@ function doSomething() {}
 
 test("connect_default", async (t) => {
   const ns = await NatsServer.start({ port: 4222 });
+  // [begin connect_default]
   const nc = await connect();
   // Do something with the connection
   doSomething();
